@@ -6,6 +6,20 @@ import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.express as px
+import sklearn
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import r2_score, mean_squared_error
+
 # 한글 폰트 설정
 font_name = matplotlib.font_manager.FontProperties(fname='C:/Windows/Fonts/malgun.ttf').get_name()
 matplotlib.rc('font', family=font_name)
@@ -55,6 +69,162 @@ correlation_matrix = merged_data.corr()
 top_10_correlations = correlation_matrix['누적승률'].drop('누적승률').sort_values(ascending=False).head(10)
 
 print(top_10_correlations)
+
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+
+# 데이터 불러오기 (이미 불러온 데이터를 사용)
+# team_data, hitter_data, pitcher_data, defense_data 를 미리 불러온 상태라고 가정합니다.
+
+# 타자 데이터 요약
+hitter_data_grouped = hitter_data.groupby('연도').agg({'타율': 'mean', '득점': 'sum', '홈런': 'sum'}).reset_index()
+
+# 투수 데이터 요약
+pitcher_data_grouped = pitcher_data.groupby('연도').agg({'ERA': 'mean', '이닝': 'sum', '자책점': 'sum'}).reset_index()
+
+# 수비 데이터 요약
+defense_data_grouped = defense_data.groupby('연도').agg({'풋아웃': 'sum', '어시스트': 'sum'}).reset_index()
+
+# 팀 데이터에서 누적 승률
+team_data_grouped = team_data.groupby('연도').tail(1)[['연도', '누적승률']].reset_index(drop=True)
+
+# 데이터 병합
+merged_data = pd.merge(team_data_grouped, hitter_data_grouped, on='연도')
+merged_data = pd.merge(merged_data, pitcher_data_grouped, on='연도')
+merged_data = pd.merge(merged_data, defense_data_grouped, on='연도')
+print(merged_data)
+# 다중 회귀 분석에 사용할 변수들
+X = merged_data[['타율', '득점', '홈런', 'ERA', '이닝', '자책점', '풋아웃', '어시스트']].dropna()
+y = merged_data['누적승률'].dropna()
+
+# 데이터를 훈련용과 테스트용으로 분리
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 다중 회귀 모델 생성 및 학습
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# 테스트 데이터로 예측
+y_pred = model.predict(X_test)
+
+# 회귀 계수와 모델 성능 확인
+coefficients = model.coef_
+intercept = model.intercept_
+r_squared = model.score(X_test, y_test)
+
+print("회귀 계수:", coefficients)
+print("절편:", intercept)
+print("R^2 값:", r_squared)
+
+# 랜덤 포레스트와 그라디언트 부스팅
+
+# 데이터를 다시 로드하여 준비
+# 독립 변수와 종속 변수 설정
+X = merged_data[['타율', '득점', '홈런', 'ERA', '이닝', '자책점', '풋아웃', '어시스트']].dropna()
+y = merged_data['누적승률'].dropna()
+
+# 데이터를 훈련용과 테스트용으로 분리
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 랜덤 포레스트 회귀 모델
+rf_model = RandomForestRegressor(random_state=42)
+rf_model.fit(X_train, y_train)
+
+# 그라디언트 부스팅 회귀 모델
+gb_model = GradientBoostingRegressor(random_state=42)
+gb_model.fit(X_train, y_train)
+
+# 각 모델의 예측
+rf_pred = rf_model.predict(X_test)
+gb_pred = gb_model.predict(X_test)
+
+# 성능 평가 - R^2와 MSE
+rf_r2 = r2_score(y_test, rf_pred)
+rf_mse = mean_squared_error(y_test, rf_pred)
+
+gb_r2 = r2_score(y_test, gb_pred)
+gb_mse = mean_squared_error(y_test, gb_pred)
+
+print("랜덤 포레스트 R^2:", rf_r2)
+print("랜덤 포레스트 MSE:", rf_mse)
+print("그라디언트 부스팅 R^2:", gb_r2)
+print("그라디언트 부스팅 MSE:", gb_mse)
+
+# 데이터를 다시 로드하고 전처리
+X = merged_data[['타율', '득점', '홈런', 'ERA', '이닝', '자책점', '풋아웃', '어시스트']].dropna()
+y = merged_data['누적승률'].dropna()
+
+# 데이터를 훈련용과 테스트용으로 분리
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 딥러닝 모델에 앞서 데이터를 정규화 (표준화)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 딥러닝 모델 생성
+model = Sequential()
+
+# 입력 레이어와 첫 번째 히든 레이어
+model.add(Dense(64, input_dim=X_train.shape[1], activation='relu'))
+
+# 추가 히든 레이어
+model.add(Dense(32, activation='relu'))
+model.add(Dense(16, activation='relu'))
+
+# 출력 레이어 (회귀 문제이므로 활성화 함수 없음)
+model.add(Dense(1))
+
+# 모델 컴파일 (회귀 문제에서는 'mse' 사용)
+model.compile(optimizer='adam', loss='mse')
+
+# 모델 학습
+history = model.fit(X_train_scaled, y_train, validation_data=(X_test_scaled, y_test), epochs=100, batch_size=32)
+
+# 예측
+y_pred = model.predict(X_test_scaled)
+
+# 성능 평가
+r2 = r2_score(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
+
+print("딥러닝 모델 R^2:", r2)
+print("딥러닝 모델 MSE:", mse)
+
+# 학습 곡선 그리기
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+
+
+# # 데이터 선택
+# X = merged_data[['어시스트', '타율', '풋아웃', '홈런']].dropna()
+# y = merged_data['누적승률'].dropna()
+
+# # 데이터를 훈련용과 테스트용으로 분리
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# # 다중 회귀 모델 생성 및 학습
+# model = LinearRegression()
+# model.fit(X_train, y_train)
+
+# # 테스트 데이터로 예측
+# y_pred = model.predict(X_test)
+
+# # 회귀 계수와 모델 성능 확인
+# coefficients = model.coef_
+# intercept = model.intercept_
+# r_squared = model.score(X_test, y_test)
+
+# print("회귀 계수:", coefficients)
+# print("절편:", intercept)
+# print("R^2 값:", r_squared)
+
 
 '''
 어시스트    0.445688
