@@ -47,7 +47,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_numeric)
 
 # 3. 주성분 분석(PCA)
-pca = PCA(n_components=7)
+pca = PCA(n_components=9)
 
 # 4. 결측값을 평균값으로 대체
 imputer = SimpleImputer(strategy='mean')
