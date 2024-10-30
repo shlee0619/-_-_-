@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>승부 예측</title>
+</head>
+<body>
+    <h1>승부 예측 프로그램</h1>
+    <form action="/predict" method="POST">
+        <label>원정팀 점수:</label>
+        <input type="text" name="away_score"><br>
+        <label>홈팀 점수:</label>
+        <input type="text" name="home_score"><br>
+        <label>승리 횟수:</label>
+        <input type="text" name="wins"><br>
+        <label>패배 횟수:</label>
+        <input type="text" name="losses"><br>
+        <label>누적 승률:</label>
+        <input type="text" name="win_rate"><br>
+        <label>누적 이동거리:</label>
+        <input type="text" name="travel_distance"><br>
+        <input type="submit" value="예측하기">
+    </form>
+</body>
+</html>
